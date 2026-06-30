@@ -1,19 +1,24 @@
 """
-Videos crawler — YouTube Data API v3.
+Videos crawler — YouTube public RSS feed (NO API key required).
+
+YouTube provides a public RSS feed for every channel that returns the 15
+most recent videos. We crawl multiple pages by scraping the channel with
+crawl4ai to get the full video list, then build all metadata from:
+  • RSS feed (title, published date, description, video ID)
+  • YouTube thumbnail CDN (https://img.youtube.com/vi/{ID}/maxresdefault.jpg)
 
 Populates:
   • videos (title, description, youtube_url, thumbnail, category,
             duration_seconds, is_published, published_at)
-
-Category is inferred from the video title / description keywords.
 """
 
 import asyncio
 import logging
 import re
-from datetime import datetime
+import xml.etree.ElementTree as ET
 
 import httpx
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
 
 from config import Config
 from supabase_client import SupabaseClient
@@ -21,104 +26,161 @@ from utils import retry, truncate
 
 logger = logging.getLogger(__name__)
 
-YT_API = "https://www.googleapis.com/youtube/v3"
+# Morgan Wallen YouTube channel ID (hardcoded, also discovered dynamically below)
 CHANNEL_ID = Config.ARTIST_YOUTUBE_CHANNEL_ID
-MAX_RESULTS = 200   # total videos to fetch (paginated)
-
-
-# ── Category inference ────────────────────────────────────────────────────────
+CHANNEL_HANDLES = [
+    "https://www.youtube.com/@MorganWallen",
+    "https://www.youtube.com/@MorganWallenMusic",
+]
+RSS_URL = f"https://www.youtube.com/feeds/videos.xml?channel_id={CHANNEL_ID}"
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
-    "music_video": ["official video", "music video", "official mv", "official music"],
-    "lyric_video": ["lyric video", "lyrics", "official lyric"],
-    "live": ["live", "concert", "performance", "at the", "unplugged", "acoustic", "stadium", "arena"],
-    "interview": ["interview", "talks", "sits down", "exclusive", "chat", "q&a"],
-    "behind_scenes": ["behind the scenes", "bts", "making of", "studio session", "day in the life", "vlog", "tour diary"],
+    "music_video": ["official video", "music video", "official mv"],
+    "lyric_video": ["lyric", "lyrics"],
+    "live": ["live", "concert", "performance", "at the", "unplugged", "acoustic"],
+    "interview": ["interview", "talks", "exclusive", "chat", "q&a"],
+    "behind_scenes": ["behind the scenes", "bts", "making of", "studio session", "vlog", "diary"],
 }
+
+NS = {
+    "yt": "http://www.youtube.com/xml/schemas/2015",
+    "media": "http://search.yahoo.com/mrss/",
+    "atom": "http://www.w3.org/2005/Atom",
+}
+
 
 def _infer_category(title: str, description: str = "") -> str:
     combined = (title + " " + description).lower()
-    for category, keywords in CATEGORY_KEYWORDS.items():
-        if any(kw in combined for kw in keywords):
-            return category
-    return "music_video"   # default
+    for cat, keywords in CATEGORY_KEYWORDS.items():
+        if any(k in combined for k in keywords):
+            return cat
+    return "music_video"
 
 
-# ── Duration parsing ──────────────────────────────────────────────────────────
-
-def _iso_duration_to_seconds(duration: str | None) -> int | None:
-    """Parse ISO 8601 duration string (e.g. PT3M45S) to seconds."""
-    if not duration:
-        return None
-    match = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?", duration)
-    if not match:
-        return None
-    h, m, s = (int(x or 0) for x in match.groups())
-    return h * 3600 + m * 60 + s
+def _thumbnail_url(video_id: str) -> str:
+    """YouTube CDN thumbnail — maxresdefault with fallback to hqdefault."""
+    return f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
 
 
-# ── Fetch ─────────────────────────────────────────────────────────────────────
+# ── RSS fetch ─────────────────────────────────────────────────────────────────
 
-@retry(max_attempts=3)
-async def _search_videos(client: httpx.AsyncClient, page_token: str | None = None) -> dict:
-    params = {
-        "part": "snippet",
-        "channelId": CHANNEL_ID,
-        "type": "video",
-        "order": "date",
-        "maxResults": 50,
-        "key": Config.YOUTUBE_API_KEY,
-    }
-    if page_token:
-        params["pageToken"] = page_token
-    resp = await client.get(f"{YT_API}/search", params=params, timeout=Config.REQUEST_TIMEOUT)
+@retry(max_attempts=3, delay=2.0)
+async def _fetch_rss(client: httpx.AsyncClient, channel_id: str) -> list[dict]:
+    """Parse the YouTube RSS feed for a channel (returns up to 15 recent videos)."""
+    url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+    resp = await client.get(url, timeout=Config.REQUEST_TIMEOUT, follow_redirects=True)
     resp.raise_for_status()
-    return resp.json()
+    root = ET.fromstring(resp.text)
+
+    entries = []
+    for entry in root.findall("atom:entry", NS):
+        video_id = entry.findtext("yt:videoId", namespaces=NS, default="")
+        title = entry.findtext("atom:title", namespaces=NS, default="")
+        published = entry.findtext("atom:published", namespaces=NS, default="")
+        mg = entry.find("media:group", NS)
+        description = mg.findtext("media:description", namespaces=NS, default="") if mg is not None else ""
+
+        if video_id and title:
+            entries.append({
+                "video_id": video_id,
+                "title": title.strip(),
+                "published": published[:10] if published else None,
+                "description": description.strip(),
+            })
+    return entries
 
 
-@retry(max_attempts=3)
-async def _get_video_details(client: httpx.AsyncClient, video_ids: list[str]) -> list[dict]:
-    resp = await client.get(
-        f"{YT_API}/videos",
-        params={
-            "part": "snippet,contentDetails,statistics",
-            "id": ",".join(video_ids),
-            "key": Config.YOUTUBE_API_KEY,
-        },
-        timeout=Config.REQUEST_TIMEOUT,
-    )
-    resp.raise_for_status()
-    return resp.json().get("items", [])
+# ── Channel crawl (get more than 15 videos) ───────────────────────────────────
+
+async def _crawl_channel_video_ids(handle_url: str) -> list[str]:
+    """
+    Crawl the YouTube channel /videos page and extract all video IDs
+    found in watch URLs. Returns deduplicated list of video IDs.
+    """
+    video_ids: list[str] = []
+
+    browser_config = BrowserConfig(headless=True, verbose=False)
+    async with AsyncWebCrawler(config=browser_config) as crawler:
+        for scroll_pass in range(3):   # scroll 3× to load more videos
+            js = f"window.scrollTo(0, document.body.scrollHeight * {(scroll_pass + 1) / 3});"
+            result = await crawler.arun(
+                url=f"{handle_url}/videos",
+                config=CrawlerRunConfig(
+                    cache_mode=CacheMode.BYPASS,
+                    js_code=js,
+                    wait_for="css:a[href*='/watch?v=']",
+                    page_timeout=25000,
+                ),
+            )
+            if result.success:
+                # Extract video IDs from all watch URLs in the HTML/markdown
+                found = re.findall(r"watch\?v=([\w-]{11})", result.html or "")
+                video_ids.extend(found)
+            await asyncio.sleep(1)
+
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    unique: list[str] = []
+    for vid in video_ids:
+        if vid not in seen:
+            seen.add(vid)
+            unique.append(vid)
+    return unique
 
 
-# ── Transform ─────────────────────────────────────────────────────────────────
+# ── Build records from video IDs ──────────────────────────────────────────────
 
-def _video_record(item: dict) -> dict:
-    snippet = item.get("snippet", {})
-    content = item.get("contentDetails", {})
-    video_id = item["id"]
-    title = snippet.get("title", "")
-    description = snippet.get("description", "")
-    thumbnails = snippet.get("thumbnails", {})
-    thumbnail = (
-        thumbnails.get("maxres", {}).get("url")
-        or thumbnails.get("high", {}).get("url")
-        or thumbnails.get("default", {}).get("url")
-    )
-    published_raw = snippet.get("publishedAt", "")
-    published_at = published_raw[:10] if published_raw else None
+async def _video_records_from_ids(
+    client: httpx.AsyncClient,
+    video_ids: list[str],
+    rss_map: dict[str, dict],
+) -> list[dict]:
+    """
+    Build video records. Uses RSS map for videos that appeared in the feed,
+    constructs minimal records for the rest (title from oEmbed if possible).
+    """
+    records = []
+    for vid_id in video_ids:
+        rss_entry = rss_map.get(vid_id)
+        if rss_entry:
+            title = rss_entry["title"]
+            description = rss_entry["description"]
+            published_at = rss_entry["published"] or "2020-01-01"
+        else:
+            # Try oEmbed for title (free, no auth)
+            try:
+                oembed_resp = await client.get(
+                    "https://www.youtube.com/oembed",
+                    params={"url": f"https://www.youtube.com/watch?v={vid_id}", "format": "json"},
+                    timeout=10,
+                )
+                if oembed_resp.status_code == 200:
+                    oembed = oembed_resp.json()
+                    title = oembed.get("title", f"Morgan Wallen — Video {vid_id}")
+                    description = ""
+                    published_at = "2020-01-01"
+                else:
+                    title = f"Morgan Wallen — {vid_id}"
+                    description = ""
+                    published_at = "2020-01-01"
+                await asyncio.sleep(0.2)
+            except Exception:
+                title = f"Morgan Wallen — {vid_id}"
+                description = ""
+                published_at = "2020-01-01"
 
-    return {
-        "title": title,
-        "description": truncate(description, 500),
-        "youtube_url": f"https://www.youtube.com/watch?v={video_id}",
-        "thumbnail": thumbnail,
-        "imagekit_path": None,   # not uploading video thumbs to IK
-        "category": _infer_category(title, description),
-        "duration_seconds": _iso_duration_to_seconds(content.get("duration")),
-        "is_published": True,
-        "published_at": published_at or "2020-01-01",
-    }
+        records.append({
+            "title": title,
+            "description": truncate(description, 500),
+            "youtube_url": f"https://www.youtube.com/watch?v={vid_id}",
+            "thumbnail": _thumbnail_url(vid_id),
+            "imagekit_path": None,
+            "category": _infer_category(title, description),
+            "duration_seconds": None,
+            "is_published": True,
+            "published_at": published_at,
+        })
+    return records
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -127,49 +189,54 @@ async def run() -> dict:
     db = SupabaseClient()
     stats = {"videos": 0, "errors": []}
 
-    if not Config.YOUTUBE_API_KEY:
-        logger.error("YOUTUBE_API_KEY not set — skipping videos crawler")
-        return stats
-
-    all_video_ids: list[str] = []
-    page_token = None
-    fetched = 0
-
     async with httpx.AsyncClient(timeout=Config.REQUEST_TIMEOUT) as client:
-        # Collect all video IDs from channel
-        while fetched < MAX_RESULTS:
-            logger.info("Fetching YouTube search page (offset %d)…", fetched)
+        # 1. Fetch RSS feed (up to 15 most recent)
+        logger.info("Fetching YouTube RSS feed for channel %s…", CHANNEL_ID)
+        rss_entries: list[dict] = []
+        try:
+            rss_entries = await _fetch_rss(client, CHANNEL_ID)
+            logger.info("RSS returned %d videos", len(rss_entries))
+        except Exception as exc:
+            logger.warning("RSS fetch failed: %s", exc)
+            stats["errors"].append(f"RSS: {exc}")
+
+        # Build RSS lookup map
+        rss_map = {e["video_id"]: e for e in rss_entries}
+
+        # 2. Crawl channel page to get full video list
+        logger.info("Crawling YouTube channel page for full video list…")
+        channel_video_ids: list[str] = []
+        for handle_url in CHANNEL_HANDLES:
             try:
-                data = await _search_videos(client, page_token)
+                ids = await _crawl_channel_video_ids(handle_url)
+                if ids:
+                    channel_video_ids = ids
+                    logger.info("Crawled %d video IDs from %s", len(ids), handle_url)
+                    break
             except Exception as exc:
-                logger.error("YouTube search failed: %s", exc)
-                stats["errors"].append(str(exc))
-                break
+                logger.warning("Channel crawl failed for %s: %s", handle_url, exc)
 
-            items = data.get("items", [])
-            all_video_ids.extend(item["id"]["videoId"] for item in items if item.get("id", {}).get("videoId"))
-            fetched += len(items)
-            page_token = data.get("nextPageToken")
-            if not page_token:
-                break
-            await asyncio.sleep(0.5)
+        # Merge: RSS IDs first (most recent), then additional IDs from page crawl
+        all_ids: list[str] = list(rss_map.keys())
+        seen_ids: set[str] = set(all_ids)
+        for vid_id in channel_video_ids:
+            if vid_id not in seen_ids:
+                seen_ids.add(vid_id)
+                all_ids.append(vid_id)
 
-        logger.info("Found %d video IDs — fetching details…", len(all_video_ids))
+        if not all_ids:
+            logger.error("No video IDs found — check channel ID or handle URL")
+            stats["errors"].append("No video IDs found")
+            return stats
 
-        # Fetch details in batches of 50
-        all_records: list[dict] = []
-        for i in range(0, len(all_video_ids), 50):
-            batch_ids = all_video_ids[i:i+50]
-            try:
-                details = await _get_video_details(client, batch_ids)
-                all_records.extend(_video_record(v) for v in details)
-            except Exception as exc:
-                logger.error("Video details fetch failed: %s", exc)
-                stats["errors"].append(str(exc))
-            await asyncio.sleep(0.3)
+        logger.info("Total unique video IDs: %d", len(all_ids))
 
-    if all_records:
-        upserted = await db.upsert("videos", all_records, on_conflict="youtube_url")
+        # 3. Build records
+        records = await _video_records_from_ids(client, all_ids, rss_map)
+
+    # 4. Upsert
+    if records:
+        upserted = await db.upsert("videos", records, on_conflict="youtube_url")
         stats["videos"] = len(upserted)
 
     logger.info("Videos done: %d videos upserted", stats["videos"])

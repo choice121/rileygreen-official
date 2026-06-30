@@ -1,5 +1,8 @@
 """
-Albums & Tracks crawler — Spotify Web API.
+Albums & Tracks crawler — Deezer public API (no API key required).
+
+Deezer is a completely free, public music database with full discography,
+cover art, and track data. No authentication needed.
 
 Populates:
   • albums  (title, slug, release_date, cover_image, description,
@@ -9,9 +12,7 @@ Populates:
 """
 
 import asyncio
-import base64
 import logging
-from datetime import datetime
 
 import httpx
 
@@ -21,158 +22,153 @@ from utils import slugify, retry
 
 logger = logging.getLogger(__name__)
 
-SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
-SPOTIFY_API = "https://api.spotify.com/v1"
-
-# Morgan Wallen's verified Spotify artist ID
-ARTIST_ID = Config.ARTIST_SPOTIFY_ID
+DEEZER = "https://api.deezer.com"
+HEADERS = {"Accept": "application/json"}
 
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
+# ── Fetch ──────────────────────────────────────────────────────────────────────
 
-async def _get_token(client: httpx.AsyncClient) -> str:
-    creds = base64.b64encode(
-        f"{Config.SPOTIFY_CLIENT_ID}:{Config.SPOTIFY_CLIENT_SECRET}".encode()
-    ).decode()
-    resp = await client.post(
-        SPOTIFY_TOKEN_URL,
-        headers={"Authorization": f"Basic {creds}"},
-        data={"grant_type": "client_credentials"},
-    )
+@retry(max_attempts=3, delay=2.0)
+async def _get(client: httpx.AsyncClient, url: str, params: dict = None) -> dict:
+    resp = await client.get(url, params=params, headers=HEADERS, timeout=Config.REQUEST_TIMEOUT)
     resp.raise_for_status()
-    return resp.json()["access_token"]
+    return resp.json()
 
 
-# ── Fetch ─────────────────────────────────────────────────────────────────────
+async def _find_artist(client: httpx.AsyncClient) -> dict | None:
+    """Search Deezer for Morgan Wallen and return the top artist match."""
+    data = await _get(client, f"{DEEZER}/search/artist", {"q": Config.ARTIST_NAME, "strict": "on"})
+    artists = data.get("data", [])
+    if not artists:
+        # Try without strict mode
+        data = await _get(client, f"{DEEZER}/search/artist", {"q": Config.ARTIST_NAME})
+        artists = data.get("data", [])
+    for a in artists:
+        if Config.ARTIST_NAME.lower() in a.get("name", "").lower():
+            logger.info("Found artist on Deezer: %s (id=%s, fans=%s)", a["name"], a["id"], a.get("nb_fan"))
+            return a
+    return None
 
-@retry(max_attempts=3)
-async def _get_all_albums(client: httpx.AsyncClient, token: str) -> list[dict]:
-    """Fetch all album groups (album, single, compilation) for the artist."""
+
+async def _get_albums(client: httpx.AsyncClient, artist_id: int) -> list[dict]:
+    """Fetch all releases for the artist."""
     albums = []
-    for group in ("album", "single"):
-        offset = 0
-        while True:
-            resp = await client.get(
-                f"{SPOTIFY_API}/artists/{ARTIST_ID}/albums",
-                headers={"Authorization": f"Bearer {token}"},
-                params={
-                    "include_groups": group,
-                    "market": "US",
-                    "limit": 50,
-                    "offset": offset,
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            albums.extend(data["items"])
-            if data["next"] is None:
-                break
-            offset += 50
+    index = 0
+    while True:
+        data = await _get(client, f"{DEEZER}/artist/{artist_id}/albums", {"index": index, "limit": 50})
+        batch = data.get("data", [])
+        albums.extend(batch)
+        if data.get("next") is None or not batch:
+            break
+        index += 50
+        await asyncio.sleep(0.5)
     return albums
 
 
-@retry(max_attempts=3)
-async def _get_tracks(client: httpx.AsyncClient, token: str, album_id: str) -> list[dict]:
-    tracks = []
-    offset = 0
-    while True:
-        resp = await client.get(
-            f"{SPOTIFY_API}/albums/{album_id}/tracks",
-            headers={"Authorization": f"Bearer {token}"},
-            params={"market": "US", "limit": 50, "offset": offset},
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        tracks.extend(data["items"])
-        if data["next"] is None:
-            break
-        offset += 50
-    return tracks
+@retry(max_attempts=3, delay=1.5)
+async def _get_tracks(client: httpx.AsyncClient, album_id: int) -> list[dict]:
+    data = await _get(client, f"{DEEZER}/album/{album_id}/tracks")
+    return data.get("data", [])
 
 
-# ── Transform ─────────────────────────────────────────────────────────────────
+# ── Transform ──────────────────────────────────────────────────────────────────
 
-def _album_record(sp_album: dict) -> dict:
-    title = sp_album["name"]
-    images = sp_album.get("images", [])
-    cover = images[0]["url"] if images else None
+def _album_record(dz: dict) -> dict:
+    title = dz.get("title", "")
+    # cover_xl is highest quality (1000×1000)
+    cover = dz.get("cover_xl") or dz.get("cover_big") or dz.get("cover")
+    record_type = dz.get("record_type", "album").lower()
+    release_date = dz.get("release_date") or None
+
     return {
         "title": title,
         "slug": slugify(title),
-        "release_date": sp_album.get("release_date"),
+        "release_date": release_date,
         "cover_image": cover,
-        "description": f"{title} — {sp_album.get('album_type', 'release').title()} by Morgan Wallen.",
-        "spotify_url": sp_album.get("external_urls", {}).get("spotify"),
-        "apple_music_url": None,   # Spotify doesn't return Apple Music URLs
-        "youtube_url": None,
+        "description": f"{title} — {record_type.title()} by Morgan Wallen"
+                       + (f", released {release_date[:4]}." if release_date else "."),
+        "spotify_url": None,
+        "apple_music_url": None,
+        "youtube_url": dz.get("link"),   # Deezer album page link
         "is_published": True,
     }
 
 
-def _track_record(sp_track: dict, album_db_id: str) -> dict:
+def _track_record(dz_track: dict, album_db_id: str) -> dict:
     return {
         "album_id": album_db_id,
-        "title": sp_track["name"],
-        "track_number": sp_track.get("track_number"),
-        "duration_seconds": (sp_track.get("duration_ms") or 0) // 1000 or None,
-        "spotify_url": sp_track.get("external_urls", {}).get("spotify"),
+        "title": dz_track.get("title", ""),
+        "track_number": dz_track.get("track_position"),
+        "duration_seconds": dz_track.get("duration"),   # Deezer returns seconds directly
+        "spotify_url": None,
         "apple_music_url": None,
-        "youtube_url": None,
+        "youtube_url": dz_track.get("link"),   # Deezer track page
         "is_published": True,
     }
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# ── Main ───────────────────────────────────────────────────────────────────────
 
 async def run() -> dict:
     db = SupabaseClient()
     stats = {"albums": 0, "tracks": 0, "errors": []}
 
     async with httpx.AsyncClient(timeout=Config.REQUEST_TIMEOUT) as client:
-        logger.info("Authenticating with Spotify…")
-        token = await _get_token(client)
+        # Find the artist
+        logger.info("Searching Deezer for '%s'…", Config.ARTIST_NAME)
+        artist = await _find_artist(client)
+        if not artist:
+            logger.error("Artist not found on Deezer — aborting")
+            stats["errors"].append("Artist not found on Deezer")
+            return stats
 
-        logger.info("Fetching albums for artist %s…", ARTIST_ID)
-        sp_albums = await _get_all_albums(client, token)
-        logger.info("Found %d Spotify albums/singles", len(sp_albums))
+        artist_id = artist["id"]
 
-        # Deduplicate by title (Spotify returns explicit + clean versions)
-        seen_titles: set[str] = set()
+        # Fetch all albums
+        logger.info("Fetching discography from Deezer (artist id=%s)…", artist_id)
+        dz_albums = await _get_albums(client, artist_id)
+        logger.info("Found %d releases on Deezer", len(dz_albums))
+
+        # Deduplicate by normalized title
+        seen: set[str] = set()
         unique_albums = []
-        for a in sp_albums:
-            key = a["name"].lower().strip()
-            if key not in seen_titles:
-                seen_titles.add(key)
+        for a in dz_albums:
+            key = a.get("title", "").lower().strip()
+            if key and key not in seen:
+                seen.add(key)
                 unique_albums.append(a)
+
+        logger.info("After deduplication: %d unique releases", len(unique_albums))
 
         # Upsert albums
         album_rows = [_album_record(a) for a in unique_albums]
         upserted = await db.upsert("albums", album_rows, on_conflict="slug")
         stats["albums"] = len(upserted)
 
-        # Build title→id map from upserted rows
+        # Build slug→id map
         id_map = {row["slug"]: row["id"] for row in upserted}
 
-        # Upsert tracks for each album
-        for sp_album in unique_albums:
-            slug = slugify(sp_album["name"])
+        # Upsert tracks per album
+        for dz_album in unique_albums:
+            slug = slugify(dz_album.get("title", ""))
             album_db_id = id_map.get(slug)
             if not album_db_id:
-                logger.warning("Could not find DB id for album '%s'", sp_album["name"])
+                logger.warning("No DB id found for album slug '%s'", slug)
                 continue
 
             try:
-                sp_tracks = await _get_tracks(client, token, sp_album["id"])
-                track_rows = [_track_record(t, album_db_id) for t in sp_tracks]
-                if track_rows:
+                dz_tracks = await _get_tracks(client, dz_album["id"])
+                if dz_tracks:
+                    track_rows = [_track_record(t, album_db_id) for t in dz_tracks]
                     await db.upsert("tracks", track_rows, on_conflict="album_id,track_number")
                     stats["tracks"] += len(track_rows)
-                    logger.info("  ↳ %s — %d tracks", sp_album["name"], len(track_rows))
+                    logger.info("  ↳ %s — %d tracks", dz_album.get("title"), len(track_rows))
             except Exception as exc:
-                logger.error("Error fetching tracks for %s: %s", sp_album["name"], exc)
+                logger.error("Tracks fetch failed for '%s': %s", dz_album.get("title"), exc)
                 stats["errors"].append(str(exc))
 
-            await asyncio.sleep(0.3)   # be polite to Spotify
+            # Deezer is generous with rate limits but be polite
+            await asyncio.sleep(0.3)
 
     logger.info("Albums done: %d albums, %d tracks", stats["albums"], stats["tracks"])
     return stats
