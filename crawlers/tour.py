@@ -1,119 +1,276 @@
 """
-Tour Dates crawler — Bandsintown public events API.
+Tour Dates crawler — scrapes multiple public sources.
+
+Primary: morganwallen.com official tour page
+Fallback: Bandsintown artist page (web, not API — Bandsintown REST API requires key as of 2026)
+Fallback: Songkick artist page
 
 Populates:
   • tour_dates (event_date, event_time, city, state, country,
                 venue, ticket_url, is_sold_out, is_cancelled)
-
-Bandsintown's events endpoint is publicly accessible with any app_id string.
 """
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+import re
+from datetime import datetime
 
-import httpx
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
+from crawl4ai.extraction_strategy import JsonCssExtractionStrategy
 
 from config import Config
 from supabase_client import SupabaseClient
-from utils import retry
 
 logger = logging.getLogger(__name__)
 
-BANDSINTOWN_URL = "https://rest.bandsintown.com/artists/morgan%20wallen/events"
-APP_ID = "morganwallen-official-site"
+TOUR_SOURCES = [
+    {
+        "name": "Morgan Wallen Official",
+        "url": "https://www.morganwallen.com/tour/",
+        "fallback_url": "https://www.morganwallen.com/",
+    },
+    {
+        "name": "Bandsintown (web)",
+        "url": "https://www.bandsintown.com/a/6281992-morgan-wallen",
+    },
+    {
+        "name": "Songkick",
+        "url": "https://www.songkick.com/artists/8605051-morgan-wallen",
+    },
+]
+
+# CSS schemas for different sites
+OFFICIAL_SCHEMA = {
+    "name": "TourDates",
+    "baseSelector": ".tour-date, .event, [class*='tour'], [class*='event'], li[class*='show']",
+    "fields": [
+        {"name": "date",   "selector": "[class*='date'], time, .date",          "type": "text"},
+        {"name": "venue",  "selector": "[class*='venue'], .venue",               "type": "text"},
+        {"name": "city",   "selector": "[class*='city'], .city, [class*='location']", "type": "text"},
+        {"name": "ticket", "selector": "a[href*='ticket'], a[href*='buy']",     "type": "attribute", "attribute": "href"},
+        {"name": "status", "selector": "[class*='sold'], [class*='cancel']",    "type": "text"},
+    ],
+}
+
+MONTH_MAP = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+    "january": 1, "february": 2, "march": 3, "april": 4, "june": 6,
+    "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
+}
+
+DATE_FORMATS = [
+    "%B %d, %Y", "%b %d, %Y", "%b. %d, %Y",
+    "%m/%d/%Y", "%Y-%m-%d", "%d %B %Y",
+    "%B %d", "%b %d",
+]
 
 
-# ── Fetch ─────────────────────────────────────────────────────────────────────
-
-@retry(max_attempts=3)
-async def _fetch_events(client: httpx.AsyncClient) -> list[dict]:
-    resp = await client.get(
-        BANDSINTOWN_URL,
-        params={"app_id": APP_ID, "date": "upcoming"},
-        timeout=Config.REQUEST_TIMEOUT,
-    )
-    resp.raise_for_status()
-    data = resp.json()
-    if isinstance(data, dict) and data.get("error"):
-        raise ValueError(f"Bandsintown error: {data['error']}")
-    return data if isinstance(data, list) else []
-
-
-# ── Transform ─────────────────────────────────────────────────────────────────
-
-def _parse_event(event: dict) -> dict | None:
-    try:
-        venue = event.get("venue", {})
-        dt_raw = event.get("datetime", "")
-        if not dt_raw:
-            return None
-
-        # Parse ISO datetime string  e.g. "2025-06-15T19:00:00"
-        try:
-            dt = datetime.fromisoformat(dt_raw.replace("Z", "+00:00"))
-        except ValueError:
-            dt = datetime.fromisoformat(dt_raw[:19])
-
-        event_date = dt.strftime("%Y-%m-%d")
-        event_time = dt.strftime("%I:%M %p").lstrip("0")   # "7:00 PM"
-
-        # Determine ticket URL from offers
-        ticket_url = event.get("url", "")
-        for offer in event.get("offers", []):
-            if offer.get("type", "").lower() == "tickets":
-                ticket_url = offer.get("url", ticket_url)
-                break
-
-        # Determine sold-out status
-        is_sold_out = False
-        for offer in event.get("offers", []):
-            if offer.get("status", "").lower() in ("sold_out", "unavailable"):
-                is_sold_out = True
-                break
-
-        return {
-            "event_date": event_date,
-            "event_time": event_time,
-            "city": venue.get("city", ""),
-            "state": venue.get("region", "") or "",
-            "country": venue.get("country", "United States"),
-            "venue": venue.get("name", ""),
-            "ticket_url": ticket_url or None,
-            "is_sold_out": is_sold_out,
-            "is_cancelled": event.get("cancelled", False),
-        }
-    except Exception as exc:
-        logger.warning("Could not parse event: %s — %s", event.get("id"), exc)
+def _parse_date(raw: str) -> str | None:
+    """Parse various date formats into YYYY-MM-DD."""
+    if not raw:
         return None
+    raw = raw.strip()
+
+    # ISO date
+    m = re.search(r"\b(\d{4}-\d{2}-\d{2})\b", raw)
+    if m:
+        return m.group(1)
+
+    for fmt in DATE_FORMATS:
+        try:
+            dt = datetime.strptime(raw[:40], fmt)
+            year = dt.year if dt.year != 1900 else datetime.now().year
+            return f"{year}-{dt.month:02d}-{dt.day:02d}"
+        except ValueError:
+            continue
+
+    # "Jul 18", "July 18 2026", etc.
+    m = re.search(
+        r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:[,\s]+(\d{4}))?",
+        raw.lower()
+    )
+    if m:
+        mon = MONTH_MAP.get(m.group(1), 1)
+        day = int(m.group(2))
+        year = int(m.group(3)) if m.group(3) else datetime.now().year
+        return f"{year}-{mon:02d}-{day:02d}"
+
+    return None
 
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+def _extract_state(city_str: str) -> tuple[str, str]:
+    """Split 'Nashville, TN' → ('Nashville', 'TN')."""
+    if not city_str:
+        return "", ""
+    parts = [p.strip() for p in city_str.split(",")]
+    if len(parts) >= 2:
+        return parts[0], parts[-1][:2].upper()
+    return city_str.strip(), ""
+
+
+def _parse_markdown_events(markdown: str) -> list[dict]:
+    """
+    Fallback: extract structured event data from page markdown.
+    Looks for date-venue-city patterns in the rendered text.
+    """
+    events = []
+    lines = [l.strip() for l in markdown.split("\n") if l.strip()]
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        date = _parse_date(line)
+        if date:
+            # Collect next few lines for venue/city
+            venue = ""
+            city = ""
+            ticket = ""
+            for j in range(i + 1, min(i + 5, len(lines))):
+                nxt = lines[j]
+                if not venue and len(nxt) > 3 and not _parse_date(nxt):
+                    venue = nxt[:100]
+                elif not city and len(nxt) > 3 and not _parse_date(nxt) and nxt != venue:
+                    city = nxt[:100]
+                if "ticket" in nxt.lower() or "buy" in nxt.lower():
+                    url_match = re.search(r"https?://[^\s\)]+", nxt)
+                    if url_match:
+                        ticket = url_match.group()
+
+            if venue:
+                city_name, state = _extract_state(city or venue)
+                events.append({
+                    "event_date": date,
+                    "event_time": None,
+                    "city": city_name,
+                    "state": state,
+                    "country": "United States",
+                    "venue": venue,
+                    "ticket_url": ticket or None,
+                    "is_sold_out": False,
+                    "is_cancelled": False,
+                })
+        i += 1
+
+    return events
+
+
+async def _crawl_source(crawler: AsyncWebCrawler, url: str, name: str) -> list[dict]:
+    """Crawl a tour source URL and extract events."""
+    events = []
+    logger.info("Crawling %s (%s)…", name, url)
+
+    try:
+        # CSS extraction attempt
+        strategy = JsonCssExtractionStrategy(OFFICIAL_SCHEMA, verbose=False)
+        result = await crawler.arun(
+            url=url,
+            config=CrawlerRunConfig(
+                extraction_strategy=strategy,
+                cache_mode=CacheMode.BYPASS,
+                wait_for="css:[class*='tour'], [class*='event'], [class*='date']",
+                page_timeout=25000,
+                js_code="window.scrollTo(0, document.body.scrollHeight);",
+            ),
+        )
+
+        if result.success and result.extracted_content:
+            import json as _json
+            try:
+                items = _json.loads(result.extracted_content)
+                for item in items:
+                    date = _parse_date(item.get("date", ""))
+                    if not date:
+                        continue
+                    venue = (item.get("venue") or "").strip()
+                    city_raw = (item.get("city") or "").strip()
+                    city_name, state = _extract_state(city_raw or venue)
+                    ticket = item.get("ticket", "") or ""
+                    status = (item.get("status") or "").lower()
+                    events.append({
+                        "event_date": date,
+                        "event_time": None,
+                        "city": city_name,
+                        "state": state,
+                        "country": "United States",
+                        "venue": venue or city_name,
+                        "ticket_url": ticket if ticket.startswith("http") else None,
+                        "is_sold_out": "sold" in status,
+                        "is_cancelled": "cancel" in status,
+                    })
+            except Exception:
+                pass
+
+        # Markdown fallback
+        if not events and result.success and result.markdown:
+            events = _parse_markdown_events(result.markdown)
+
+        logger.info("  %s: found %d events", name, len(events))
+
+    except Exception as exc:
+        logger.warning("Source %s failed: %s", name, exc)
+
+    return events
+
+
+def _dedup(events: list[dict]) -> list[dict]:
+    """Deduplicate by event_date + venue (case-insensitive)."""
+    seen: set[tuple] = set()
+    unique = []
+    for e in events:
+        key = (e.get("event_date", ""), (e.get("venue") or "").lower().strip()[:30])
+        if key not in seen:
+            seen.add(key)
+            unique.append(e)
+    return unique
+
 
 async def run() -> dict:
     db = SupabaseClient()
     stats = {"tour_dates": 0, "errors": []}
 
-    async with httpx.AsyncClient(timeout=Config.REQUEST_TIMEOUT) as client:
-        logger.info("Fetching tour dates from Bandsintown…")
-        try:
-            events = await _fetch_events(client)
-        except Exception as exc:
-            logger.error("Failed to fetch Bandsintown events: %s", exc)
-            stats["errors"].append(str(exc))
-            return stats
+    browser_config = BrowserConfig(headless=True, verbose=False)
+    all_events: list[dict] = []
 
-    logger.info("Found %d upcoming events", len(events))
+    async with AsyncWebCrawler(config=browser_config) as crawler:
+        for source in TOUR_SOURCES:
+            try:
+                url = source["url"]
+                events = await _crawl_source(crawler, url, source["name"])
 
-    records = []
-    for event in events:
-        rec = _parse_event(event)
-        if rec and rec["venue"] and rec["event_date"]:
-            records.append(rec)
+                # Try fallback URL if primary gave nothing
+                if not events and source.get("fallback_url"):
+                    events = await _crawl_source(crawler, source["fallback_url"], source["name"] + " (fallback)")
 
-    if records:
-        upserted = await db.upsert("tour_dates", records, on_conflict="event_date,venue")
+                all_events.extend(events)
+
+                # If we have enough from the official site, stop
+                if len(all_events) >= 5 and source["name"] == "Morgan Wallen Official":
+                    logger.info("Got sufficient events from official site — skipping fallback sources")
+                    break
+
+            except Exception as exc:
+                logger.error("Source %s error: %s", source["name"], exc)
+                stats["errors"].append(str(exc))
+
+            await asyncio.sleep(2)
+
+    events = _dedup(all_events)
+    # Filter past dates and invalid entries
+    from datetime import date as dt_date
+    today = dt_date.today().isoformat()
+    valid = [
+        e for e in events
+        if e.get("event_date", "") >= today and e.get("venue")
+    ]
+
+    logger.info("Found %d valid upcoming events after dedup + filter", len(valid))
+
+    if valid:
+        upserted = await db.upsert("tour_dates", valid, on_conflict="event_date,venue")
         stats["tour_dates"] = len(upserted)
+    else:
+        logger.warning("No new tour dates found — existing DB data preserved")
 
     logger.info("Tour done: %d dates upserted", stats["tour_dates"])
     return stats
