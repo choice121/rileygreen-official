@@ -1,7 +1,4 @@
-## ⛔ NO RUN COMMAND — SEE replit.md AND REPLIT_AGENT_BLOCK.md
-## This app runs on Cloudflare Pages + Supabase, NOT on Replit.
-
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "python-3.12", "web"]
 
 [agent]
 expertMode = true
