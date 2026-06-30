@@ -140,8 +140,16 @@ async def run() -> dict:
 
         logger.info("After deduplication: %d unique releases", len(unique_albums))
 
-        # Upsert albums
-        album_rows = [_album_record(a) for a in unique_albums]
+        # Build album rows and deduplicate by slug (prevents ON CONFLICT affecting same row twice)
+        slug_seen: set[str] = set()
+        album_rows = []
+        for a in unique_albums:
+            row = _album_record(a)
+            if row["slug"] not in slug_seen:
+                slug_seen.add(row["slug"])
+                album_rows.append(row)
+        logger.info("Unique slugs to upsert: %d", len(album_rows))
+
         upserted = await db.upsert("albums", album_rows, on_conflict="slug")
         stats["albums"] = len(upserted)
 
