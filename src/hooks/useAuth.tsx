@@ -53,7 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signUp(email: string, password: string, fullName: string) {
     const { error, data } = await supabase.auth.signUp({ email, password })
     if (!error && data.user) {
-      await supabase.from('profiles').insert({ id: data.user.id, full_name: fullName })
+      // If email confirmation is disabled, session comes back immediately — set it
+      if (data.session) {
+        await supabase.auth.setSession(data.session)
+        setSession(data.session)
+        setUser(data.user)
+      }
+      // Insert profile (RLS allows public insert)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({ id: data.user.id, full_name: fullName })
+      if (!profileError) {
+        fetchProfile(data.user.id)
+      }
       // Send welcome email non-blocking
       sendWelcome(fullName, email).catch(err => console.error('[auth] welcome email error:', err))
     }
