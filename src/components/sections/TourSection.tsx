@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { MapPin, Calendar, ExternalLink, Ticket } from 'lucide-react'
+import { MapPin, Calendar, Ticket } from 'lucide-react'
 import { supabase, TourDate } from '../../lib/supabase'
 import { format } from 'date-fns'
 import SectionHeader from '../ui/SectionHeader'
@@ -96,16 +96,13 @@ export default function TourSection() {
                     Sold Out
                   </span>
                 ) : date ? (
-                  <a
-                    href={date.ticket_url || '#'}
-                    target="_blank"
-                    rel="noreferrer"
+                  <Link
+                    to={`/tickets/${date.id}`}
                     className="btn-gold py-2 px-5 text-xs inline-flex items-center gap-2"
                   >
                     <Ticket size={14} />
                     Get Tickets
-                    <ExternalLink size={12} />
-                  </a>
+                  </Link>
                 ) : null}
               </div>
             </motion.div>
