@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { MapPin, Calendar, Ticket, ExternalLink, XCircle } from 'lucide-react'
+import { MapPin, Calendar, Ticket, XCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { supabase, TourDate } from '../lib/supabase'
 import { format } from 'date-fns'
 import LoadingSpinner from '../components/ui/LoadingSpinner'
@@ -119,16 +120,13 @@ export default function TourPage() {
                         Sold Out
                       </span>
                     ) : (
-                      <a
-                        href={date.ticket_url || '#'}
-                        target="_blank"
-                        rel="noreferrer"
+                      <Link
+                        to={`/tickets/${date.id}`}
                         className="btn-gold py-2.5 px-5 text-xs inline-flex items-center gap-2"
                       >
                         <Ticket size={14} />
                         Get Tickets
-                        <ExternalLink size={11} />
-                      </a>
+                      </Link>
                     )}
                   </div>
                 </motion.div>

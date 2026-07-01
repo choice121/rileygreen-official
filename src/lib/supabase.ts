@@ -160,3 +160,21 @@ export type ContactSubmission = {
   is_read: boolean
   created_at: string
 }
+
+export type TicketOrder = {
+  id: string
+  order_number: string
+  tour_date_id: string
+  customer_name: string
+  customer_email: string
+  customer_phone: string | null
+  ticket_type: string
+  quantity: number
+  unit_price: number
+  total_price: number
+  status: string
+  user_id: string | null
+  admin_notes: string | null
+  created_at: string
+  updated_at: string
+}

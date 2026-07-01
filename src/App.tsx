@@ -15,6 +15,8 @@ import ContactPage from './pages/ContactPage'
 import LoginPage from './pages/LoginPage'
 import AccountPage from './pages/AccountPage'
 import JoinPage from './pages/JoinPage'
+import TicketCheckoutPage from './pages/TicketCheckoutPage'
+import OrderConfirmationPage from './pages/OrderConfirmationPage'
 import AdminPage from './pages/AdminPage'
 import NotFoundPage from './pages/NotFoundPage'
 
@@ -43,6 +45,8 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/account" element={<AccountPage />} />
                 <Route path="/join" element={<JoinPage />} />
+                <Route path="/tickets/:id" element={<TicketCheckoutPage />} />
+                <Route path="/order-confirmation/:id" element={<OrderConfirmationPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </main>
