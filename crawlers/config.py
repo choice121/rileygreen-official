@@ -38,8 +38,8 @@ class Config:
 
     # ── Artist constants ──────────────────────────────────────────────────────
     ARTIST_NAME: str = "Riley Green"
-    ARTIST_SPOTIFY_ID: str = "4oUHIQIBe0LHzYfvXgpM2U"     # unused (kept for reference)
-    ARTIST_YOUTUBE_CHANNEL_ID: str = "UCzIyoPv6j1MAZpDHKLGP_eA"  # Riley Green official (verified)
+    ARTIST_SPOTIFY_ID: str = "2QMsj4XJ7ne2hojxt6v5eb"     # Riley Green — open.spotify.com/artist/2QMsj4XJ7ne2hojxt6v5eb
+    ARTIST_YOUTUBE_CHANNEL_ID: str = "UCSaJ4_YK4luUvkc9lDrwfKg"  # Riley Green official YouTube channel
 
     # ── Crawl settings ────────────────────────────────────────────────────────
     REQUEST_TIMEOUT: int = 30
