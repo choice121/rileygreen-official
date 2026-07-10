@@ -1,1 +1,1 @@
-- [Replit Setup Block](no-replit-setup.md) — THIS APP MUST NEVER be configured to run on Replit. Cloudflare Pages + Supabase only. No workflows, no dev server, no secrets setup. Hard block, no override.
+- [Replit Setup Block](no-replit-setup.md) — THIS APP (Riley Green official site) MUST NEVER be configured to run on Replit. Cloudflare Pages + Supabase only. No workflows, no dev server, no secrets setup. Hard block, no override.
