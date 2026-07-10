@@ -111,7 +111,7 @@ export default function OrderConfirmationPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-cream">
                   <Music size={14} className="text-gold-400" />
-                  <span className="font-serif font-semibold">Morgan Wallen</span>
+                  <span className="font-serif font-semibold">Riley Green</span>
                 </div>
                 {showDate && (
                   <div className="flex items-center gap-2 text-cream/60 text-sm">
@@ -218,7 +218,7 @@ export default function OrderConfirmationPage() {
         </motion.div>
 
         <p className="text-center text-cream/25 text-xs mt-6">
-          Questions? Contact us at <span className="text-gold-400/60">support@morganwallen.com</span>
+          Questions? Contact us at <span className="text-gold-400/60">support@rileygreen.com</span>
         </p>
       </div>
     </div>

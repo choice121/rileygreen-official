@@ -152,7 +152,7 @@ export default function LoginPage() {
       >
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-6">
-            <span className="shimmer-text font-display text-2xl font-bold uppercase tracking-widest">Morgan Wallen</span>
+            <span className="shimmer-text font-display text-2xl font-bold uppercase tracking-widest">Riley Green</span>
           </Link>
           <h1 className="font-serif text-3xl text-cream">
             {mode === 'login' ? 'Fan Login' : mode === 'signup' ? 'Create Account' : 'Reset Password'}
@@ -161,7 +161,7 @@ export default function LoginPage() {
             {mode === 'login'
               ? 'Welcome back to the official fan hub.'
               : mode === 'signup'
-              ? 'Join the Morgan Wallen fan community.'
+              ? 'Join the Riley Green fan community.'
               : 'Enter your email to receive a reset link.'}
           </p>
         </div>

@@ -85,7 +85,7 @@ export default function AdminPage() {
         <div className="p-5 border-b border-gold-500/10">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-serif text-gold-400 text-sm">Morgan Wallen</p>
+              <p className="font-serif text-gold-400 text-sm">Riley Green</p>
               <p className="text-cream/30 text-xs">Admin Panel</p>
             </div>
             <button onClick={() => setMobileOpen(false)} className="lg:hidden text-cream/40 hover:text-cream">

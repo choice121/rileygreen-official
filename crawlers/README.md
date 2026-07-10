@@ -1,6 +1,6 @@
-# Morgan Wallen — Automated Content Crawlers
+# Riley Green — Automated Content Crawlers
 
-Fully automated pipeline that populates every section of the Morgan Wallen official site with real, live data — no manual CMS entry required.
+Fully automated pipeline that populates every section of the Riley Green official site with real, live data — no manual CMS entry required.
 
 ## What It Does
 
@@ -32,7 +32,7 @@ Add these as GitHub Actions repository secrets (Settings → Secrets → Actions
 ## Manual Run (GitHub Actions)
 
 1. Go to **Actions** tab in GitHub
-2. Click **🎸 Morgan Wallen — Content Crawlers**
+2. Click **🎸 Riley Green — Content Crawlers**
 3. Click **Run workflow**
 4. Choose which crawler to run (or "all")
 5. Click **Run workflow**

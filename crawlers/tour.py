@@ -1,7 +1,7 @@
 """
 Tour Dates crawler — scrapes multiple public sources.
 
-Primary: morganwallen.com official tour page
+Primary: rileygreen.com official tour page
 Fallback: Bandsintown artist page (web, not API — Bandsintown REST API requires key as of 2026)
 Fallback: Songkick artist page
 
@@ -25,17 +25,17 @@ logger = logging.getLogger(__name__)
 
 TOUR_SOURCES = [
     {
-        "name": "Morgan Wallen Official",
-        "url": "https://www.morganwallen.com/tour/",
-        "fallback_url": "https://www.morganwallen.com/",
+        "name": "Riley Green Official",
+        "url": "https://www.rileygreenmusic.com/tour",
+        "fallback_url": "https://www.rileygreenmusic.com/",
     },
     {
         "name": "Bandsintown (web)",
-        "url": "https://www.bandsintown.com/a/6281992-morgan-wallen",
+        "url": "https://www.bandsintown.com/a/1316779-riley-green",
     },
     {
         "name": "Songkick",
-        "url": "https://www.songkick.com/artists/8605051-morgan-wallen",
+        "url": "https://www.songkick.com/artists/9016389-riley-green",
     },
 ]
 
@@ -245,7 +245,7 @@ async def run() -> dict:
                 all_events.extend(events)
 
                 # If we have enough from the official site, stop
-                if len(all_events) >= 5 and source["name"] == "Morgan Wallen Official":
+                if len(all_events) >= 5 and source["name"] == "Riley Green Official":
                     logger.info("Got sufficient events from official site — skipping fallback sources")
                     break
 

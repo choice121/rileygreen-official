@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 CHANNEL_ID = Config.ARTIST_YOUTUBE_CHANNEL_ID
 CHANNEL_HANDLES = [
-    "https://www.youtube.com/@MorganWallen",
-    "https://www.youtube.com/@MorganWallenMusic",
+    "https://www.youtube.com/@rileygreen",
+    "https://www.youtube.com/channel/UCSaJ4_YK4luUvkc9lDrwfKg",
 ]
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
@@ -152,13 +152,13 @@ async def _video_records_from_ids(
                 )
                 if oembed_resp.status_code == 200:
                     oembed = oembed_resp.json()
-                    title = oembed.get("title", f"Morgan Wallen — {vid_id}")
+                    title = oembed.get("title", f"Riley Green — {vid_id}")
                 else:
-                    title = f"Morgan Wallen — {vid_id}"
+                    title = f"Riley Green — {vid_id}"
                 description = ""
                 await asyncio.sleep(0.2)
             except Exception:
-                title = f"Morgan Wallen — {vid_id}"
+                title = f"Riley Green — {vid_id}"
                 description = ""
 
             # Use today as a reasonable fallback (much better than "2020-01-01")

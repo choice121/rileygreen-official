@@ -106,7 +106,7 @@ export default function MerchAdmin() {
           <div><label className="block text-xs text-cream/50 uppercase tracking-wider mb-1">Sizes (comma-separated)</label>
             <input className={inputCls} value={sizesInput} onChange={e => setSizesInput(e.target.value)} placeholder="S, M, L, XL, 2XL" /></div>
           <div><label className="block text-xs text-cream/50 uppercase tracking-wider mb-1">Shop URL</label>
-            <input className={inputCls} value={editing.shopify_url ?? ''} onChange={e => setEditing(v => ({ ...v, shopify_url: e.target.value }))} placeholder="https://store.morganwallen.com/..." /></div>
+            <input className={inputCls} value={editing.shopify_url ?? ''} onChange={e => setEditing(v => ({ ...v, shopify_url: e.target.value }))} placeholder="https://store.rileygreen.com/..." /></div>
           <div><label className="block text-xs text-cream/50 uppercase tracking-wider mb-1">Description</label>
             <textarea className={`${inputCls} resize-none`} rows={2} value={editing.description ?? ''} onChange={e => setEditing(v => ({ ...v, description: e.target.value }))} /></div>
           <div className="flex gap-6">

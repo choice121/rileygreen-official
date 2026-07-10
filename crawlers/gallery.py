@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 CHANNEL_ID = Config.ARTIST_YOUTUBE_CHANNEL_ID
 CHANNEL_HANDLES = [
-    "https://www.youtube.com/@MorganWallen",
-    "https://www.youtube.com/@MorganWallenMusic",
+    "https://www.youtube.com/@rileygreen",
+    "https://www.youtube.com/channel/UCSaJ4_YK4luUvkc9lDrwfKg",
 ]
 
 NS = {
@@ -144,7 +144,7 @@ async def _process_thumbnail(
 
 PRESS_SOURCES = [
     {
-        "url": "https://www.morganwallen.com/",
+        "url": "https://www.rileygreen.com/",
         "category": "press",
         "label": "Official site",
     },
@@ -203,7 +203,7 @@ async def _crawl_press_photos() -> list[dict]:
                         path = await upload_image(img_url, file_name, f"/gallery/{source['category']}")
                         if path:
                             photos.append({
-                                "title": f"Morgan Wallen — {source['label']} Photo {uploaded + 1}",
+                                "title": f"Riley Green — {source['label']} Photo {uploaded + 1}",
                                 "imagekit_path": path,
                                 "category": source["category"],
                                 "taken_at": None,
@@ -252,7 +252,7 @@ async def run() -> dict:
     rss_id_set = {v["video_id"] for v in rss_videos}
     for vid_id in channel_ids:
         if vid_id not in rss_id_set:
-            all_videos.append({"video_id": vid_id, "title": "Morgan Wallen — Live Performance"})
+            all_videos.append({"video_id": vid_id, "title": "Riley Green — Live Performance"})
             rss_id_set.add(vid_id)
 
     logger.info("Processing %d total video thumbnails for gallery…", len(all_videos))

@@ -30,7 +30,7 @@ export default function MerchPage() {
         <div className="relative z-10 max-w-7xl mx-auto">
           <p className="section-subtitle mb-4">Official Store</p>
           <h1 className="section-title">Merchandise</h1>
-          <p className="mt-4 text-cream/50 max-w-xl">Official Morgan Wallen merchandise. All items ship directly from the official store.</p>
+          <p className="mt-4 text-cream/50 max-w-xl">Official Riley Green merchandise. All items ship directly from the official store.</p>
         </div>
       </div>
 

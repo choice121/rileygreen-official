@@ -29,10 +29,10 @@ export default function TourPage() {
           <div className="text-[15rem] font-display font-black text-gold-500 leading-none">LIVE</div>
         </div>
         <div className="relative z-10 max-w-7xl mx-auto">
-          <p className="section-subtitle mb-4">2026 Stadium World Tour</p>
+          <p className="section-subtitle mb-4">Cowboy As It Gets Tour 2026</p>
           <h1 className="section-title">Tour Dates</h1>
           <p className="mt-4 text-cream/50 max-w-xl">
-            Experience Morgan Wallen live. Select a city near you and get your tickets before they sell out.
+            Experience Riley Green live. Select a city near you and get your tickets before they sell out.
           </p>
         </div>
       </div>

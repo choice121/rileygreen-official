@@ -1,6 +1,6 @@
-# Morgan Wallen — Official Website
+# Riley Green — Official Website
 
-A beautiful, modern, fully responsive official website for country music artist Morgan Wallen.
+A beautiful, modern, fully responsive official website for country music artist Riley Green.
 
 ## Tech Stack
 
@@ -15,7 +15,7 @@ A beautiful, modern, fully responsive official website for country music artist 
 ## Features
 
 - 🎸 **Music** — Albums, tracks, streaming links
-- 🎟️ **Tour Dates** — Upcoming shows with ticket links
+- 🎟️ **Tour Dates** — Upcoming shows with ticket links (Cowboy As It Gets Tour)
 - 📰 **News & Blog** — CMS-managed articles
 - 🖼️ **Photo Gallery** — Lightbox gallery with category filtering
 - 🎬 **Videos** — Music videos and live footage

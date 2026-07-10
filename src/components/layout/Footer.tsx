@@ -46,13 +46,13 @@ const footerLinks = {
 type SocialIcon = React.ComponentType<{ size?: number }>
 
 const socials: { icon: SocialIcon; href: string; label: string }[] = [
-  { icon: FacebookIcon,     href: 'https://facebook.com/MorganWallen',                              label: 'Facebook' },
-  { icon: Instagram,        href: 'https://instagram.com/morganwallen',                             label: 'Instagram' },
-  { icon: TikTokIcon,       href: 'https://tiktok.com/@morganwallen',                               label: 'TikTok' },
-  { icon: Twitter,          href: 'https://twitter.com/MorganWallen',                               label: 'X / Twitter' },
-  { icon: Youtube,          href: 'https://youtube.com/@morganwallen',                              label: 'YouTube' },
-  { icon: AmazonMusicIcon,  href: 'https://music.amazon.com/artists/B07FGXVYD4/morgan-wallen',     label: 'Amazon Music' },
-  { icon: Music,            href: 'https://open.spotify.com/artist/4oUHIQIBe0LkMauLosHQ6I',        label: 'Spotify' },
+  { icon: FacebookIcon,     href: 'https://facebook.com/RileyGreenMusic',                              label: 'Facebook' },
+  { icon: Instagram,        href: 'https://instagram.com/rileygreen',                             label: 'Instagram' },
+  { icon: TikTokIcon,       href: 'https://tiktok.com/@rileyduckman',                               label: 'TikTok' },
+  { icon: Twitter,          href: 'https://twitter.com/RileyGreenMusic',                               label: 'X / Twitter' },
+  { icon: Youtube,          href: 'https://youtube.com/@rileygreen',                              label: 'YouTube' },
+  { icon: AmazonMusicIcon,  href: 'https://music.amazon.com/artists/B00DFRX1P6/riley-green',     label: 'Amazon Music' },
+  { icon: Music,            href: 'https://open.spotify.com/artist/2QMsj4XJ7ne2hojxt6v5eb',        label: 'Spotify' },
 ]
 
 export default function Footer() {
@@ -63,11 +63,11 @@ export default function Footer() {
           <div className="md:col-span-2">
             <Link to="/">
               <span className="font-display text-2xl font-bold tracking-widest uppercase shimmer-text">
-                Morgan Wallen
+                Riley Green
               </span>
             </Link>
             <p className="mt-4 text-cream/50 text-sm leading-relaxed max-w-xs">
-              Country music artist from Sneedville, Tennessee. Authentic storytelling, real country music.
+              Country music artist from Jacksonville, Alabama. Authentic storytelling, real country music.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               {socials.map(({ icon: Icon, href, label }) => (
@@ -108,7 +108,7 @@ export default function Footer() {
 
         <div className="mt-12 pt-8 border-t border-gold-500/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-cream/30 text-xs">
-            © {new Date().getFullYear()} Morgan Wallen. All rights reserved.
+            © {new Date().getFullYear()} Riley Green. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link to="/contact" className="text-cream/30 text-xs hover:text-cream/60 transition-colors">Privacy Policy</Link>

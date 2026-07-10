@@ -22,7 +22,7 @@ export default function MerchSection() {
   return (
     <section className="section-padding bg-dark-800">
       <div className="container-xl">
-        <SectionHeader subtitle="Official Store" title="Merchandise" description="Gear up with official Morgan Wallen merch." />
+        <SectionHeader subtitle="Official Store" title="Merchandise" description="Gear up with official Riley Green merch." />
 
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {(items.length ? items : Array(3).fill(null)).map((item, i) => (

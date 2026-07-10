@@ -6,9 +6,9 @@ import { supabase, Album } from '../../lib/supabase'
 import { ikUrl, PLACEHOLDER_IMAGES } from '../../lib/imagekit'
 import SectionHeader from '../ui/SectionHeader'
 
-const MW_SPOTIFY = 'https://open.spotify.com/artist/4oUHIQIBe0LkMauLosHQ6I'
-const MW_APPLE   = 'https://music.apple.com/us/artist/morgan-wallen/829142092'
-const MW_AMAZON  = 'https://music.amazon.com/artists/B07FGXVYD4/morgan-wallen'
+const MW_SPOTIFY = 'https://open.spotify.com/artist/2QMsj4XJ7ne2hojxt6v5eb'
+const MW_APPLE   = 'https://music.apple.com/us/artist/riley-green/662432971'
+const MW_AMAZON  = 'https://music.amazon.com/artists/B00DFRX1P6/riley-green'
 
 export default function MusicSection() {
   const [albums, setAlbums] = useState<Album[]>([])

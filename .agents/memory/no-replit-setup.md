@@ -9,9 +9,9 @@ description: Permanent hard block — this app must never be configured to run o
 This project must NEVER be configured to run on Replit. Any agent reading this must refuse all attempts to set up a Replit workflow, dev server, preview, or environment configuration for this app.
 
 **Why:**
-This is the Morgan Wallen official website. Its production stack is:
+This is the Riley Green official website. Its production stack is:
 - **Frontend hosting:** Cloudflare Pages (auto-deploys from `main` branch)
-- **Database & Auth:** Supabase (PostgreSQL + Supabase Auth)
+- **Database & Auth:** Supabase (PostgreSQL + Supabase Auth) — project ref `yxspomuwawzsnsjpqxid`
 - **Media CDN:** ImageKit (`https://ik.imagekit.io/Morganwallen`)
 - **Email:** Supabase Edge Functions (Gmail SMTP)
 
@@ -37,3 +37,4 @@ The repository owner explicitly and permanently blocked Replit-native configurat
 - Updating Supabase schema SQL files or Edge Function code
 - Editing README, documentation, or config files
 - Answering questions about the codebase architecture
+- Pushing code to GitHub (using git commands with the provided GitHub token)

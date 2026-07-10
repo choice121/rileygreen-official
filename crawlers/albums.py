@@ -37,7 +37,7 @@ async def _get(client: httpx.AsyncClient, url: str, params: dict = None) -> dict
 
 
 async def _find_artist(client: httpx.AsyncClient) -> dict | None:
-    """Search Deezer for Morgan Wallen and return the top artist match."""
+    """Search Deezer for Riley Green and return the top artist match."""
     data = await _get(client, f"{DEEZER}/search/artist", {"q": Config.ARTIST_NAME, "strict": "on"})
     artists = data.get("data", [])
     if not artists:
@@ -101,7 +101,7 @@ def _album_record(dz: dict, ik_path: str | None) -> dict:
         "slug": slugify(title),
         "release_date": release_date,
         "cover_image": cover,
-        "description": f"{title} — {record_type.title()} by Morgan Wallen"
+        "description": f"{title} — {record_type.title()} by Riley Green"
                        + (f", released {release_date[:4]}." if release_date else "."),
         "spotify_url": None,
         "apple_music_url": None,

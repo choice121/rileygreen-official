@@ -49,7 +49,7 @@ export default function JoinPage() {
               Join the <span className="shimmer-text">Inner Circle</span>
             </h1>
             <p className="mt-5 text-cream/60 text-lg max-w-xl mx-auto leading-relaxed">
-              Become an official member. Get your digital membership card, exclusive content, and early access to everything Morgan Wallen.
+              Become an official member. Get your digital membership card, exclusive content, and early access to everything Riley Green.
             </p>
           </motion.div>
         </div>

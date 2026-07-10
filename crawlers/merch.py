@@ -1,5 +1,5 @@
 """
-Merch crawler — crawl4ai on the official Morgan Wallen store.
+Merch crawler — crawl4ai on the official Riley Green store.
 
 Tries multiple known store URLs with multiple CSS extraction schemas.
 
@@ -23,9 +23,9 @@ from utils import truncate
 logger = logging.getLogger(__name__)
 
 STORE_URLS = [
-    "https://store.morganwallen.com/",
-    "https://www.morganwallen.com/store/",
-    "https://morganwallen.com/store/",
+    "https://store.rileygreen.com/",
+    "https://www.rileygreen.com/store/",
+    "https://rileygreen.com/store/",
 ]
 
 # Multiple schema attempts — different stores use different markup

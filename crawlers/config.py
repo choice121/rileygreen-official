@@ -37,9 +37,9 @@ class Config:
     YOUTUBE_API_KEY: str = os.getenv("YOUTUBE_API_KEY", "")
 
     # ── Artist constants ──────────────────────────────────────────────────────
-    ARTIST_NAME: str = "Morgan Wallen"
+    ARTIST_NAME: str = "Riley Green"
     ARTIST_SPOTIFY_ID: str = "4oUHIQIBe0LHzYfvXgpM2U"     # unused (kept for reference)
-    ARTIST_YOUTUBE_CHANNEL_ID: str = "UCzIyoPv6j1MAZpDHKLGP_eA"  # Morgan Wallen official (verified)
+    ARTIST_YOUTUBE_CHANNEL_ID: str = "UCzIyoPv6j1MAZpDHKLGP_eA"  # Riley Green official (verified)
 
     # ── Crawl settings ────────────────────────────────────────────────────────
     REQUEST_TIMEOUT: int = 30

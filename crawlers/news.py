@@ -2,10 +2,10 @@
 News crawler — crawl4ai on multiple country music news sites.
 
 Sources:
-  • Taste of Country  — tasteofcountry.com/tags/morgan-wallen/
+  • Taste of Country  — tasteofcountry.com/tags/riley-green/
   • Country Now       — countrynow.com/?s=morgan+wallen
-  • Rolling Stone     — rollingstone.com/t/morgan-wallen/
-  • Billboard         — billboard.com/t/morgan-wallen/
+  • Rolling Stone     — rollingstone.com/t/riley-green/
+  • Billboard         — billboard.com/t/riley-green/
 
 Populates:
   • news_posts (title, slug, excerpt, content, cover_image,
@@ -35,7 +35,7 @@ MAX_CONTENT_LENGTH = 8000
 SOURCES = [
     {
         "name": "Taste of Country",
-        "url": "https://tasteofcountry.com/tags/morgan-wallen/",
+        "url": "https://tasteofcountry.com/tags/riley-green/",
         "listing_schema": {
             "name": "Articles",
             "baseSelector": "article, .article-list-item, .post",
@@ -69,7 +69,7 @@ SOURCES = [
     },
     {
         "name": "Rolling Stone",
-        "url": "https://www.rollingstone.com/t/morgan-wallen/",
+        "url": "https://www.rollingstone.com/t/riley-green/",
         "listing_schema": {
             "name": "Articles",
             "baseSelector": "article, .c-card, .c-featured-card",
@@ -86,7 +86,7 @@ SOURCES = [
     },
     {
         "name": "Billboard",
-        "url": "https://www.billboard.com/t/morgan-wallen/",
+        "url": "https://www.billboard.com/t/riley-green/",
         "listing_schema": {
             "name": "Articles",
             "baseSelector": "article, .article-item, .lrv-a-grid-item",

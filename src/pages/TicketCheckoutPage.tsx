@@ -163,7 +163,7 @@ export default function TicketCheckoutPage() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
               <h1 className="font-serif text-2xl font-bold text-cream">
-                Morgan Wallen — {show.city}{show.state ? `, ${show.state}` : ''}
+                Riley Green — {show.city}{show.state ? `, ${show.state}` : ''}
               </h1>
               <div className="flex flex-wrap items-center gap-4 mt-2 text-cream/50 text-sm">
                 <span className="flex items-center gap-1.5"><Calendar size={13} className="text-gold-400" />{format(showDate, 'EEEE, MMMM d, yyyy')}</span>

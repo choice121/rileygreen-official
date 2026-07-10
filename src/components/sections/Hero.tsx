@@ -66,7 +66,7 @@ export default function Hero() {
         >
           <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
           <span className="text-gold-400 text-xs font-display uppercase tracking-widest">
-            New Album — I'm The Problem — Out Now
+            New Album — That's Just Me — Out September 18
           </span>
         </motion.div>
 
@@ -77,9 +77,9 @@ export default function Hero() {
           transition={{ delay: 0.4, duration: 0.9 }}
           className="font-serif text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold text-cream leading-none text-shadow"
         >
-          Morgan
+          Riley
           <br />
-          <span className="shimmer-text">Wallen</span>
+          <span className="shimmer-text">Green</span>
         </motion.h1>
 
         {/* Sub-tagline */}
@@ -89,7 +89,7 @@ export default function Hero() {
           transition={{ delay: 0.7, duration: 0.8 }}
           className="mt-6 text-cream/60 text-lg md:text-xl font-sans max-w-lg mx-auto"
         >
-          Authentic country music from the heart of Tennessee
+          Authentic country music from Jacksonville, Alabama
         </motion.p>
 
         {/* CTAs */}
@@ -100,7 +100,7 @@ export default function Hero() {
           className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center"
         >
           <a
-            href="https://open.spotify.com/artist/4oUHIQIBe0LkMauLosHQ6I"
+            href="https://open.spotify.com/artist/2QMsj4XJ7ne2hojxt6v5eb"
             target="_blank"
             rel="noreferrer"
             className="btn-gold px-8 py-4 text-sm"

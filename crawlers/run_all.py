@@ -99,7 +99,7 @@ async def main(selected: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Morgan Wallen site content crawlers")
+    parser = argparse.ArgumentParser(description="Riley Green site content crawlers")
     parser.add_argument(
         "--crawler",
         default="all",

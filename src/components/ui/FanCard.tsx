@@ -88,7 +88,7 @@ export default function FanCard({ profile, email, preview = false }: FanCardProp
         logging: false,
       })
       const link = document.createElement('a')
-      link.download = `morgan-wallen-fan-card-${padMember(profile.member_number)}.png`
+      link.download = `riley-green-fan-card-${padMember(profile.member_number)}.png`
       link.href = canvas.toDataURL('image/png')
       link.click()
       toast.success('Fan card downloaded!')
@@ -99,10 +99,10 @@ export default function FanCard({ profile, email, preview = false }: FanCardProp
 
   async function handleShare() {
     const text = isVip
-      ? `I'm VIP member #${padMember(profile.member_number)} of the Morgan Wallen Official Fan Club! 🤠👑 #MorganWallen #ClubWallen #VIP`
-      : `I'm fan #${padMember(profile.member_number)} of the official Morgan Wallen Fan Club! 🤠 #MorganWallen #ClubWallen`
+      ? `I'm VIP member #${padMember(profile.member_number)} of the Riley Green Official Fan Club! 🤠👑 #RileyGreen #RileyGreenFanClub #VIP`
+      : `I'm fan #${padMember(profile.member_number)} of the official Riley Green Fan Club! 🤠 #RileyGreen #RileyGreenFanClub`
     if (navigator.share) {
-      await navigator.share({ text, url: 'https://morganwallen.com' })
+      await navigator.share({ text, url: 'https://rileygreen.com' })
     } else {
       await navigator.clipboard.writeText(text)
       toast.success('Copied to clipboard!')
@@ -224,7 +224,7 @@ export default function FanCard({ profile, email, preview = false }: FanCardProp
             <div className="flex items-start justify-between">
               <div>
                 <p style={{ fontFamily: 'var(--font-display, serif)', fontSize: '10px', letterSpacing: '0.28em', textTransform: 'uppercase', color: c.accent, fontWeight: 600 }}>
-                  Morgan Wallen
+                  Riley Green
                 </p>
                 <p style={{ fontFamily: 'var(--font-display, serif)', fontSize: '8px', letterSpacing: '0.22em', textTransform: 'uppercase', color: c.sub, marginTop: '2px' }}>
                   Official Fan Club
@@ -333,7 +333,7 @@ export default function FanCard({ profile, email, preview = false }: FanCardProp
                   letterSpacing: '-2px',
                   marginBottom: '-2px',
                 }}>
-                  MW
+                  RG
                 </div>
               </div>
 

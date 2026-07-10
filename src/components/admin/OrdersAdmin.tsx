@@ -278,7 +278,7 @@ export default function OrdersAdmin() {
                               <p className="text-cream/30 text-xs font-display uppercase tracking-widest mb-1">Quick Actions</p>
                               <div className="flex flex-wrap gap-2">
                                 <a
-                                  href={`mailto:${order.customer_email}?subject=Your Morgan Wallen Tickets — ${order.order_number}`}
+                                  href={`mailto:${order.customer_email}?subject=Your Riley Green Tickets — ${order.order_number}`}
                                   className="inline-flex items-center gap-1.5 text-xs border border-gold-500/20 text-gold-400/70 hover:text-gold-400 px-3 py-1.5 rounded-sm transition-colors"
                                 >
                                   <Mail size={11} /> Email Customer

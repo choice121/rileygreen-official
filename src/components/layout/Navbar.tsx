@@ -47,7 +47,7 @@ export default function Navbar() {
             {/* Logo */}
             <Link to="/" className="flex-shrink-0 group">
               <span className="font-display text-xl md:text-2xl font-bold tracking-widest uppercase">
-                <span className="shimmer-text">Morgan Wallen</span>
+                <span className="shimmer-text">Riley Green</span>
               </span>
             </Link>
 
@@ -135,11 +135,11 @@ export default function Navbar() {
               </div>
               {/* Socials */}
               <div className="mt-auto flex flex-wrap gap-5 text-cream/40">
-                <a href="https://facebook.com/MorganWallen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">Facebook</a>
-                <a href="https://instagram.com/morganwallen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">Instagram</a>
-                <a href="https://twitter.com/MorganWallen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">X</a>
-                <a href="https://tiktok.com/@morganwallen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">TikTok</a>
-                <a href="https://youtube.com/@morganwallen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">YouTube</a>
+                <a href="https://facebook.com/RileyGreenMusic" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">Facebook</a>
+                <a href="https://instagram.com/rileygreen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">Instagram</a>
+                <a href="https://twitter.com/RileyGreenMusic" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">X</a>
+                <a href="https://tiktok.com/@rileyduckman" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">TikTok</a>
+                <a href="https://youtube.com/@rileygreen" target="_blank" rel="noreferrer" className="hover:text-gold-400 text-sm uppercase tracking-widest font-display">YouTube</a>
               </div>
             </div>
           </motion.div>

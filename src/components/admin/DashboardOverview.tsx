@@ -51,7 +51,7 @@ export default function DashboardOverview() {
             className="flex items-center gap-2 text-gold-400 hover:text-gold-300 transition-colors">
             → ImageKit Upload
           </a>
-          <a href="https://github.com/choice121/morganwallen-official" target="_blank" rel="noreferrer"
+          <a href="https://github.com/choice121/rileygreen-official" target="_blank" rel="noreferrer"
             className="flex items-center gap-2 text-gold-400 hover:text-gold-300 transition-colors">
             → GitHub Repo
           </a>
