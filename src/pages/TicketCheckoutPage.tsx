@@ -40,7 +40,7 @@ const TICKET_TYPES = [
 ]
 
 function generateOrderNumber() {
-  return 'MW-' + Math.floor(100000 + Math.random() * 900000)
+  return 'RG-' + Math.floor(100000 + Math.random() * 900000)
 }
 
 export default function TicketCheckoutPage() {

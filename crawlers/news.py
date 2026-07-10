@@ -3,7 +3,7 @@ News crawler — crawl4ai on multiple country music news sites.
 
 Sources:
   • Taste of Country  — tasteofcountry.com/tags/riley-green/
-  • Country Now       — countrynow.com/?s=morgan+wallen
+  • Country Now       — countrynow.com/?s=riley+green
   • Rolling Stone     — rollingstone.com/t/riley-green/
   • Billboard         — billboard.com/t/riley-green/
 
@@ -52,7 +52,7 @@ SOURCES = [
     },
     {
         "name": "Country Now",
-        "url": "https://countrynow.com/?s=morgan+wallen",
+        "url": "https://countrynow.com/?s=riley+green",
         "listing_schema": {
             "name": "Articles",
             "baseSelector": "article, .post, .entry",
@@ -209,7 +209,7 @@ def _parse_listing_markdown(markdown: str, domain: str) -> list[dict]:
     for m in pattern.finditer(markdown):
         title = m.group(1).strip()
         url = m.group(2).strip()
-        if domain in url and "morgan" in (title + url).lower():
+        if domain in url and "riley" in (title + url).lower():
             links.append({"title": title, "url": url, "excerpt": "", "image": None, "date": None})
     return links[:MAX_ARTICLES_PER_SOURCE]
 

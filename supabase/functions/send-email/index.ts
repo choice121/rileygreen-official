@@ -138,7 +138,7 @@ function tplNewsletterConfirm(name: string) {
       eye('Welcome to the fan club') +
       p(`Hey ${first},`) +
       p("Thanks for subscribing to the Riley Green newsletter. You'll be the first to hear about new music, tour announcements, merch drops, and everything going on.") +
-      p('Big thanks from Morgan and the whole team. Stay tuned.', '36px') +
+      p('Big thanks from Riley and the whole team. Stay tuned.', '36px') +
       btn('Visit the Site', SITE_URL) +
       `<p style="margin:32px 0 0;font-size:11px;color:#333;border-top:1px solid ${BORDER};padding-top:20px;">You're receiving this because you signed up at rileygreen.com.</p>`
     ),
